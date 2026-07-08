@@ -126,9 +126,12 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
-    os.getenv("FRONTEND_URL", ""),
 ]
 
+_frontend_url = os.getenv("FRONTEND_URL")
+if _frontend_url:
+    CORS_ALLOWED_ORIGINS.append(_frontend_url)
+    
 REST_FRAMEWORK = {
     "DEFAULT_PERMISSION_CLASSES": [
         "rest_framework.permissions.AllowAny",
