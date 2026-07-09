@@ -1,7 +1,10 @@
+from urllib.parse import quote
+
 from django.core.management.base import BaseCommand
 
 from geo.models import Location
 from destinations.models import Category, Destination, Amenity
+from bookings.models import BookingLink
 
 
 AMENITY_DEFAULTS = {
@@ -215,6 +218,42 @@ class Command(BaseCommand):
 
             if amenity_objs:
                 destination.amenities.set(amenity_objs)
+
+            city_query = quote(f"{loc_data['city']}, {loc_data['state']}")
+            airport = loc_data["airport_code"]
+
+            booking_link_specs = [
+                {
+                    "provider": BookingLink.GOOGLE_FLIGHTS,
+                    "label": "Book Flight",
+                    "booking_url": (
+                        f"https://www.google.com/travel/flights?q=Flights+to+{airport}"
+                        if airport
+                        else "https://www.google.com/travel/flights"
+                    ),
+                    "display_order": 0,
+                },
+                {
+                    "provider": BookingLink.BOOKING_COM,
+                    "label": "Find Hotels Nearby",
+                    "booking_url": (
+                        f"https://www.booking.com/searchresults.html?ss={city_query}"
+                    ),
+                    "display_order": 1,
+                },
+            ]
+
+            for spec in booking_link_specs:
+                BookingLink.objects.get_or_create(
+                    destination=destination,
+                    provider=spec["provider"],
+                    label=spec["label"],
+                    defaults={
+                        "booking_url": spec["booking_url"],
+                        "is_active": True,
+                        "display_order": spec["display_order"],
+                    },
+                )
 
             if dest_created:
                 created_count += 1
