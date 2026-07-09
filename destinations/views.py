@@ -5,6 +5,7 @@ from .serializers import (
     DestinationDetailSerializer,
     CategorySerializer,
 )
+from .filters import DestinationFilter
 
 
 class CategoryViewSet(viewsets.ReadOnlyModelViewSet):
@@ -15,7 +16,7 @@ class CategoryViewSet(viewsets.ReadOnlyModelViewSet):
 
 class DestinationViewSet(viewsets.ReadOnlyModelViewSet):
     lookup_field = "slug"
-    filterset_fields = ["category", "is_featured", "is_active"]
+    filterset_class = DestinationFilter
     search_fields = ["name", "description", "address"]
     ordering_fields = ["name", "created_at"]
 
