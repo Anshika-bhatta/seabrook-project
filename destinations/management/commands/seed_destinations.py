@@ -1,7 +1,19 @@
 from django.core.management.base import BaseCommand
 
 from geo.models import Location
-from destinations.models import Category, Destination
+from destinations.models import Category, Destination, Amenity
+
+
+AMENITY_DEFAULTS = {
+    "Parking": {"icon": "🅿️", "description": "On-site or nearby parking available."},
+    "Restrooms": {"icon": "🚻", "description": "Public restrooms available."},
+    "Food & Dining": {"icon": "🍽️", "description": "Restaurants or food vendors on site."},
+    "Wheelchair Accessible": {"icon": "♿", "description": "Accessible pathways and facilities."},
+    "Pet Friendly": {"icon": "🐾", "description": "Pets welcome in outdoor areas."},
+    "Gift Shop": {"icon": "🛍️", "description": "On-site gift or souvenir shop."},
+    "Hiking Trails": {"icon": "🥾", "description": "Marked trails for walking or hiking."},
+    "Fishing": {"icon": "🎣", "description": "Fishing permitted or facilities available."},
+}
 
 
 SEED_DATA = [
@@ -21,6 +33,7 @@ SEED_DATA = [
             "featuring rides, restaurants, and boardwalk shops just minutes "
             "from Seabrook."
         ),
+        "amenities": ["Parking", "Restrooms", "Food & Dining", "Wheelchair Accessible"],
     },
     {
         "name": "Galveston Seawall & Beach",
@@ -37,6 +50,7 @@ SEED_DATA = [
             "A ten-mile stretch of seawall and sandy beach along the Gulf "
             "of Mexico, popular for swimming, biking, and Gulf Coast sunsets."
         ),
+        "amenities": ["Parking", "Restrooms", "Pet Friendly"],
     },
     {
         "name": "Space Center Houston",
@@ -54,6 +68,7 @@ SEED_DATA = [
             "with real spacecraft, astronaut training areas, and interactive "
             "exhibits."
         ),
+        "amenities": ["Parking", "Restrooms", "Wheelchair Accessible", "Gift Shop", "Food & Dining"],
     },
     {
         "name": "Moody Gardens",
@@ -70,6 +85,7 @@ SEED_DATA = [
             "A family-friendly campus with a rainforest pyramid, aquarium, "
             "and seasonal light displays set on Galveston Island."
         ),
+        "amenities": ["Parking", "Restrooms", "Food & Dining", "Wheelchair Accessible", "Gift Shop"],
     },
     {
         "name": "Armand Bayou Nature Center",
@@ -86,6 +102,7 @@ SEED_DATA = [
             "One of the largest urban wilderness preserves in the U.S., "
             "with hiking trails through marsh, prairie, and forest habitats."
         ),
+        "amenities": ["Parking", "Restrooms", "Hiking Trails"],
     },
     {
         "name": "San Jacinto Monument & Battleground",
@@ -103,6 +120,7 @@ SEED_DATA = [
             "decisive 1836 battle for Texas independence, with a "
             "observation deck overlooking the Houston Ship Channel."
         ),
+        "amenities": ["Parking", "Restrooms", "Wheelchair Accessible", "Gift Shop"],
     },
     {
         "name": "Seawolf Park",
@@ -120,6 +138,7 @@ SEED_DATA = [
             "WWII submarine and destroyer escort open for tours, plus "
             "fishing piers and bay views."
         ),
+        "amenities": ["Parking", "Restrooms", "Fishing"],
     },
     {
         "name": "Texas City Dike",
@@ -137,6 +156,7 @@ SEED_DATA = [
             "fishing, crabbing, and watching ships pass through the "
             "Houston Ship Channel."
         ),
+        "amenities": ["Parking", "Fishing", "Pet Friendly"],
     },
 ]
 
@@ -183,6 +203,18 @@ class Command(BaseCommand):
                     "is_active": True,
                 },
             )
+
+            amenity_objs = []
+            for amenity_name in entry.get("amenities", []):
+                defaults = AMENITY_DEFAULTS.get(amenity_name, {})
+                amenity, _ = Amenity.objects.get_or_create(
+                    name=amenity_name,
+                    defaults=defaults,
+                )
+                amenity_objs.append(amenity)
+
+            if amenity_objs:
+                destination.amenities.set(amenity_objs)
 
             if dest_created:
                 created_count += 1
