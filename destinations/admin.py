@@ -142,6 +142,7 @@ class DestinationAdmin(admin.ModelAdmin):
                 "fields": (
                     "image",
                     "website",
+                    "opening_hours",
                 )
             },
         ),

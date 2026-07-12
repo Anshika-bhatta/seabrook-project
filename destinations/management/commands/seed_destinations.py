@@ -37,6 +37,8 @@ SEED_DATA = [
             "from Seabrook."
         ),
         "amenities": ["Parking", "Restrooms", "Food & Dining", "Wheelchair Accessible"],
+        "is_featured": True,
+        "opening_hours": "11:00 AM - 10:00 PM",
     },
     {
         "name": "Galveston Seawall & Beach",
@@ -54,6 +56,7 @@ SEED_DATA = [
             "of Mexico, popular for swimming, biking, and Gulf Coast sunsets."
         ),
         "amenities": ["Parking", "Restrooms", "Pet Friendly"],
+        "opening_hours": "Open 24 hours",
     },
     {
         "name": "Space Center Houston",
@@ -72,6 +75,8 @@ SEED_DATA = [
             "exhibits."
         ),
         "amenities": ["Parking", "Restrooms", "Wheelchair Accessible", "Gift Shop", "Food & Dining"],
+        "is_featured": True,
+        "opening_hours": "10:00 AM - 5:00 PM",
     },
     {
         "name": "Moody Gardens",
@@ -89,6 +94,8 @@ SEED_DATA = [
             "and seasonal light displays set on Galveston Island."
         ),
         "amenities": ["Parking", "Restrooms", "Food & Dining", "Wheelchair Accessible", "Gift Shop"],
+        "is_featured": True,
+        "opening_hours": "10:00 AM - 6:00 PM",
     },
     {
         "name": "Armand Bayou Nature Center",
@@ -106,6 +113,7 @@ SEED_DATA = [
             "with hiking trails through marsh, prairie, and forest habitats."
         ),
         "amenities": ["Parking", "Restrooms", "Hiking Trails"],
+        "opening_hours": "9:00 AM - 5:00 PM (Tue-Sun)",
     },
     {
         "name": "San Jacinto Monument & Battleground",
@@ -124,6 +132,7 @@ SEED_DATA = [
             "observation deck overlooking the Houston Ship Channel."
         ),
         "amenities": ["Parking", "Restrooms", "Wheelchair Accessible", "Gift Shop"],
+        "opening_hours": "9:00 AM - 6:00 PM",
     },
     {
         "name": "Seawolf Park",
@@ -142,6 +151,7 @@ SEED_DATA = [
             "fishing piers and bay views."
         ),
         "amenities": ["Parking", "Restrooms", "Fishing"],
+        "opening_hours": "7:00 AM - 10:00 PM",
     },
     {
         "name": "Texas City Dike",
@@ -160,6 +170,7 @@ SEED_DATA = [
             "Houston Ship Channel."
         ),
         "amenities": ["Parking", "Fishing", "Pet Friendly"],
+        "opening_hours": "Open 24 hours",
     },
 ]
 
@@ -206,6 +217,16 @@ class Command(BaseCommand):
                     "is_active": True,
                 },
             )
+
+            desired_featured = entry.get("is_featured", False)
+            if destination.is_featured != desired_featured:
+                destination.is_featured = desired_featured
+                destination.save(update_fields=["is_featured"])
+
+            desired_hours = entry.get("opening_hours", "")
+            if destination.opening_hours != desired_hours:
+                destination.opening_hours = desired_hours
+                destination.save(update_fields=["opening_hours"])
 
             amenity_objs = []
             for amenity_name in entry.get("amenities", []):

@@ -134,6 +134,15 @@ class Destination(models.Model):
         blank=True
     )
 
+    opening_hours = models.CharField(
+        max_length=150,
+        blank=True,
+        help_text=(
+            "Free-text display hours, e.g. '11:00 AM - 10:00 PM' "
+            "or 'Open 24 hours' or 'Varies by season'"
+        )
+    )
+
     is_featured = models.BooleanField(
         default=False
     )
@@ -218,4 +227,3 @@ class DestinationImage(models.Model):
             f"{self.destination.name} "
             f"- Image {self.id}"
         )
-        
