@@ -103,17 +103,25 @@ class Command(BaseCommand):
     )
 
     def handle(self, *args, **options):
-        renamed = Category.objects.filter(slug="beach").update(
-            name="Beaches & Parks", slug="beaches-parks"
-        )
-        if renamed:
-            self.stdout.write(
-                self.style.SUCCESS("Renamed 'Beach' category to 'Beaches & Parks'")
-            )
+        # Idempotent rename: only attempt it if the target name doesn't
+        # already exist. This avoids a collision if seed_destinations (which
+        # runs first, every deploy) ever recreates a stray "Beach" row from
+        # its own hardcoded data before this command gets a chance to run.
+        if Category.objects.filter(name="Beaches & Parks").exists():
+            self.stdout.write("Category 'Beaches & Parks' already exists, skipping rename")
+            # Clean up any stray duplicate "Beach" row left behind by
+            # seed_destinations recreating it against the old slug.
+            Category.objects.filter(slug="beach").exclude(
+                name="Beaches & Parks"
+            ).delete()
         else:
-            existing = Category.objects.filter(slug="beaches-parks").exists()
-            if existing:
-                self.stdout.write("Category already named 'Beaches & Parks', skipping rename")
+            renamed = Category.objects.filter(slug="beach").update(
+                name="Beaches & Parks", slug="beaches-parks"
+            )
+            if renamed:
+                self.stdout.write(
+                    self.style.SUCCESS("Renamed 'Beach' category to 'Beaches & Parks'")
+                )
             else:
                 self.stdout.write(
                     self.style.WARNING(

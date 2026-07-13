@@ -43,7 +43,7 @@ SEED_DATA = [
     {
         "name": "Galveston Seawall & Beach",
         "slug": "galveston-seawall-beach",
-        "category": {"name": "Beach", "slug": "beach", "icon": "beach"},
+        "category": {"name": "Beaches & Parks", "slug": "beaches-parks", "icon": "beach"},
         "location": {
             "city": "Galveston", "state": "Texas", "country": "United States",
             "latitude": "29.254400", "longitude": "-94.847800", "airport_code": "GLS",
@@ -156,7 +156,7 @@ SEED_DATA = [
     {
         "name": "Texas City Dike",
         "slug": "texas-city-dike",
-        "category": {"name": "Beach", "slug": "beach", "icon": "beach"},
+        "category": {"name": "Beaches & Parks", "slug": "beaches-parks", "icon": "beach"},
         "location": {
             "city": "Texas City", "state": "Texas", "country": "United States",
             "latitude": "29.417700", "longitude": "-94.875200", "airport_code": "HOU",
