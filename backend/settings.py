@@ -127,9 +127,11 @@ CORS_ALLOWED_ORIGINS = [
     "http://127.0.0.1:3000",
 ]
 
-_frontend_url = os.getenv("FRONTEND_URL")
-if _frontend_url:
-    CORS_ALLOWED_ORIGINS.append(_frontend_url)
+_extra_origins = os.getenv("FRONTEND_URLS") or os.getenv("FRONTEND_URL")
+if _extra_origins:
+    CORS_ALLOWED_ORIGINS.extend(
+        origin.strip() for origin in _extra_origins.split(",") if origin.strip()
+    )
     
 REST_FRAMEWORK = {
     "DEFAULT_PERMISSION_CLASSES": [
