@@ -1,8 +1,18 @@
+from urllib.parse import quote
+
 from django.core.management.base import BaseCommand
 
 from geo.models import Location
-from destinations.models import Category, Destination
+from destinations.models import Category, Destination, Amenity
+from bookings.models import BookingLink
 
+
+AMENITY_DEFAULTS = {
+    "Parking": {"icon": "🅿️", "description": "On-site or nearby parking available."},
+    "Restrooms": {"icon": "🚻", "description": "Public restrooms available."},
+    "Fishing": {"icon": "🎣", "description": "Fishing permitted or facilities available."},
+    "Food & Dining": {"icon": "🍽️", "description": "Restaurants or food vendors on site."},
+}
 
 LOCAL_PLACES = [
     {
@@ -15,6 +25,8 @@ LOCAL_PLACES = [
             "A 52-acre bayfront park with a fishing pier, boardwalks, and "
             "some of the best birding on Galveston Bay."
         ),
+        "amenities": ["Parking", "Restrooms", "Fishing"],
+        "opening_hours": "6:00 AM - 10:00 PM",
     },
     {
         "name": "Meador Park",
@@ -26,6 +38,8 @@ LOCAL_PLACES = [
             "A family park with a splash pad, playground, and shaded "
             "picnic areas."
         ),
+        "amenities": ["Parking", "Restrooms"],
+        "opening_hours": "6:00 AM - 10:00 PM",
     },
     {
         "name": "Miramar Park",
@@ -37,6 +51,8 @@ LOCAL_PLACES = [
             "A waterfront park with bay access, walking paths, and sunset "
             "views."
         ),
+        "amenities": ["Parking", "Restrooms"],
+        "opening_hours": "6:00 AM - 10:00 PM",
     },
     {
         "name": "Seabrook Sailing Club",
@@ -48,6 +64,8 @@ LOCAL_PLACES = [
             "A Clear Lake sailing club known for regattas and youth "
             "sailing programs."
         ),
+        "amenities": ["Parking", "Restrooms"],
+        "opening_hours": "Open 24 hours",
     },
     {
         "name": "Endeavour Marina",
@@ -59,6 +77,8 @@ LOCAL_PLACES = [
             "A full-service marina with wet slips and dry storage near "
             "the Kemah bridge."
         ),
+        "amenities": ["Parking", "Restrooms"],
+        "opening_hours": "Open 24 hours",
     },
     {
         "name": "Seabrook Marina",
@@ -70,6 +90,8 @@ LOCAL_PLACES = [
             "A sheltered marina with deep-water access straight out to "
             "Galveston Bay."
         ),
+        "amenities": ["Parking", "Restrooms", "Fishing"],
+        "opening_hours": "Open 24 hours",
     },
     {
         "name": "Pelican Grill",
@@ -81,6 +103,8 @@ LOCAL_PLACES = [
             "A waterfront restaurant serving fresh Gulf seafood with "
             "marina views."
         ),
+        "amenities": ["Parking", "Food & Dining"],
+        "opening_hours": "11:00 AM - 9:00 PM",
     },
     {
         "name": "Tookie's Seafood",
@@ -92,25 +116,71 @@ LOCAL_PLACES = [
             "A local seafood favorite praised for its fresh catch and "
             "classic Gulf plates."
         ),
+        "amenities": ["Parking", "Food & Dining"],
+        "opening_hours": "11:00 AM - 9:00 PM",
     },
 ]
+
+SEABROOK_BEACH_EXTRAS = {
+    "slug": "seabrook-beach",
+    "amenities": ["Parking", "Restrooms"],
+    "opening_hours": "Open 24 hours",
+}
+
+
+def apply_booking_links(destination, city, state, airport_code=""):
+    city_query = quote(f"{city}, {state}")
+    specs = [
+        {
+            "provider": BookingLink.GOOGLE_FLIGHTS,
+            "label": "Book Flight",
+            "booking_url": (
+                f"https://www.google.com/travel/flights?q=Flights+to+{airport_code}"
+                if airport_code
+                else "https://www.google.com/travel/flights"
+            ),
+            "display_order": 0,
+        },
+        {
+            "provider": BookingLink.BOOKING_COM,
+            "label": "Find Hotels Nearby",
+            "booking_url": f"https://www.booking.com/searchresults.html?ss={city_query}",
+            "display_order": 1,
+        },
+    ]
+    for spec in specs:
+        BookingLink.objects.get_or_create(
+            destination=destination,
+            provider=spec["provider"],
+            label=spec["label"],
+            defaults={
+                "booking_url": spec["booking_url"],
+                "is_active": True,
+                "display_order": spec["display_order"],
+            },
+        )
+
+
+def apply_amenities(destination, amenity_names):
+    amenity_objs = []
+    for name in amenity_names:
+        defaults = AMENITY_DEFAULTS.get(name, {})
+        amenity, _ = Amenity.objects.get_or_create(name=name, defaults=defaults)
+        amenity_objs.append(amenity)
+    if amenity_objs:
+        destination.amenities.set(amenity_objs)
 
 
 class Command(BaseCommand):
     help = (
         "Renames the Beach category to Beaches & Parks, adds Marinas and "
-        "Dining categories, and seeds local Seabrook POIs from the real site."
+        "Dining categories, and seeds local Seabrook POIs with amenities, "
+        "hours, and booking links."
     )
 
     def handle(self, *args, **options):
-        # Idempotent rename: only attempt it if the target name doesn't
-        # already exist. This avoids a collision if seed_destinations (which
-        # runs first, every deploy) ever recreates a stray "Beach" row from
-        # its own hardcoded data before this command gets a chance to run.
         if Category.objects.filter(name="Beaches & Parks").exists():
             self.stdout.write("Category 'Beaches & Parks' already exists, skipping rename")
-            # Clean up any stray duplicate "Beach" row left behind by
-            # seed_destinations recreating it against the old slug.
             Category.objects.filter(slug="beach").exclude(
                 name="Beaches & Parks"
             ).delete()
@@ -134,19 +204,12 @@ class Command(BaseCommand):
                     defaults={"name": "Beaches & Parks", "icon": "beach"},
                 )
 
-        marinas_cat, created = Category.objects.get_or_create(
-            slug="marinas",
-            defaults={"name": "Marinas", "icon": "anchor"},
+        Category.objects.get_or_create(
+            slug="marinas", defaults={"name": "Marinas", "icon": "anchor"}
         )
-        if created:
-            self.stdout.write(self.style.SUCCESS("Created category: Marinas"))
-
-        dining_cat, created = Category.objects.get_or_create(
-            slug="dining",
-            defaults={"name": "Dining", "icon": "utensils"},
+        Category.objects.get_or_create(
+            slug="dining", defaults={"name": "Dining", "icon": "utensils"}
         )
-        if created:
-            self.stdout.write(self.style.SUCCESS("Created category: Dining"))
 
         try:
             seabrook_location = Location.objects.get(
@@ -155,9 +218,8 @@ class Command(BaseCommand):
         except Location.DoesNotExist:
             self.stdout.write(
                 self.style.ERROR(
-                    "No Location found for Seabrook, Texas. Create it in the "
-                    "admin first (or run seed_destinations, which creates it "
-                    "via the Seabrook Beach entry)."
+                    "No Location found for Seabrook, Texas. Run "
+                    "seed_destinations first."
                 )
             )
             return
@@ -168,7 +230,7 @@ class Command(BaseCommand):
         for place in LOCAL_PLACES:
             category = Category.objects.get(slug=place["category_slug"])
 
-            _, created = Destination.objects.get_or_create(
+            destination, created = Destination.objects.get_or_create(
                 slug=place["slug"],
                 defaults={
                     "location": seabrook_location,
@@ -182,6 +244,14 @@ class Command(BaseCommand):
                 },
             )
 
+            desired_hours = place.get("opening_hours", "")
+            if destination.opening_hours != desired_hours:
+                destination.opening_hours = desired_hours
+                destination.save(update_fields=["opening_hours"])
+
+            apply_amenities(destination, place.get("amenities", []))
+            apply_booking_links(destination, "Seabrook", "Texas", "HOU")
+
             if created:
                 created_count += 1
                 self.stdout.write(
@@ -189,11 +259,31 @@ class Command(BaseCommand):
                 )
             else:
                 skipped_count += 1
-                self.stdout.write(f"Skipped (already exists): {place['name']}")
+                self.stdout.write(f"Synced data for: {place['name']}")
+
+        try:
+            seabrook_beach = Destination.objects.get(
+                slug=SEABROOK_BEACH_EXTRAS["slug"]
+            )
+            desired_hours = SEABROOK_BEACH_EXTRAS["opening_hours"]
+            if seabrook_beach.opening_hours != desired_hours:
+                seabrook_beach.opening_hours = desired_hours
+                seabrook_beach.save(update_fields=["opening_hours"])
+            apply_amenities(seabrook_beach, SEABROOK_BEACH_EXTRAS["amenities"])
+            apply_booking_links(seabrook_beach, "Seabrook", "Texas", "HOU")
+            self.stdout.write(
+                self.style.SUCCESS("Synced amenities/hours/booking for Seabrook Beach")
+            )
+        except Destination.DoesNotExist:
+            self.stdout.write(
+                self.style.WARNING(
+                    "No 'seabrook-beach' destination found — skipping patch."
+                )
+            )
 
         self.stdout.write(
             self.style.SUCCESS(
-                f"\nDone. Created {created_count}, skipped {skipped_count} "
-                f"(already existed)."
+                f"\nDone. Created {created_count}, synced {skipped_count} "
+                f"existing local places."
             )
         )
