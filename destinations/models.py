@@ -151,6 +151,29 @@ class Destination(models.Model):
         default=True
     )
 
+    is_owner_submitted = models.BooleanField(
+        default=False,
+        help_text=(
+            "True when this listing came in through the public "
+            "business self-registration form, rather than being "
+            "added by staff via the admin."
+        )
+    )
+
+    owner_name = models.CharField(
+        max_length=150,
+        blank=True
+    )
+
+    owner_email = models.EmailField(
+        blank=True
+    )
+
+    owner_phone = models.CharField(
+        max_length=30,
+        blank=True
+    )
+
     created_at = models.DateTimeField(
         auto_now_add=True
     )

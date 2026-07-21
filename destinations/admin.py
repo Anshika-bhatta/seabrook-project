@@ -72,6 +72,7 @@ class DestinationAdmin(admin.ModelAdmin):
         "name",
         "category",
         "location",
+        "is_owner_submitted",
         "is_featured",
         "is_active",
         "created_at",
@@ -89,6 +90,7 @@ class DestinationAdmin(admin.ModelAdmin):
 
     list_filter = (
         "category",
+        "is_owner_submitted",
         "is_featured",
         "is_active",
         "location__country",
@@ -161,6 +163,21 @@ class DestinationAdmin(admin.ModelAdmin):
                     "is_featured",
                     "is_active",
                 )
+            },
+        ),
+        (
+            "Owner Submission",
+            {
+                "fields": (
+                    "is_owner_submitted",
+                    "owner_name",
+                    "owner_email",
+                    "owner_phone",
+                ),
+                "description": (
+                    "Filled in automatically when this listing comes "
+                    "through the public business registration form."
+                ),
             },
         ),
         (

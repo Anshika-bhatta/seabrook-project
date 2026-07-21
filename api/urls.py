@@ -1,9 +1,14 @@
+from django.urls import path
 from rest_framework.routers import DefaultRouter
 
 from .views import LandingPageViewSet
 from geo.views import LocationViewSet
 from bookings.views import BookingLinkViewSet
-from destinations.views import DestinationViewSet, CategoryViewSet
+from destinations.views import (
+    DestinationViewSet,
+    DestinationRegisterView,
+    CategoryViewSet,
+)
 
 router = DefaultRouter()
 router.register(r"landing-pages", LandingPageViewSet, basename="landing-page")
@@ -12,4 +17,13 @@ router.register(r"booking-links", BookingLinkViewSet, basename="booking-link")
 router.register(r"destinations", DestinationViewSet, basename="destination")
 router.register(r"categories", CategoryViewSet, basename="category")
 
-urlpatterns = router.urls
+urlpatterns = [
+    # Must come BEFORE router.urls: the router's detail route is
+    # destinations/<slug>/, and "register" would otherwise be swallowed
+    # by that pattern and treated as a slug lookup.
+    path(
+        "destinations/register/",
+        DestinationRegisterView.as_view(),
+        name="destination-register",
+    ),
+] + router.urls
