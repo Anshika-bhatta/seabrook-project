@@ -96,7 +96,7 @@ class DestinationRegisterSerializer(serializers.ModelSerializer):
         write_only=True,
     )
 
-    image = serializers.ImageField(required=True)
+    image = serializers.ImageField(required=False)
 
     # Honeypot: kept empty and visually hidden on the real form. Bots that
     # fill every field trip this and get rejected before hitting the DB.
