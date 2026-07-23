@@ -5,6 +5,7 @@ from .serializers import (
     DestinationListSerializer,
     DestinationDetailSerializer,
     DestinationRegisterSerializer,
+    DestinationEditSerializer,
     CategorySerializer,
 )
 from .filters import DestinationFilter
@@ -47,3 +48,19 @@ class DestinationRegisterView(generics.CreateAPIView):
     serializer_class = DestinationRegisterSerializer
     permission_classes = [permissions.AllowAny]
     parser_classes = [MultiPartParser, FormParser]
+
+
+class DestinationEditView(generics.RetrieveUpdateAPIView):
+    """
+    GET to prefill the edit form, PATCH/PUT to save changes - looked up
+    by the private edit_token, never by slug or id. Anyone holding a
+    valid token can edit; no other auth exists (matches the anonymous,
+    no-accounts registration flow).
+    """
+
+    queryset = Destination.objects.all()
+    serializer_class = DestinationEditSerializer
+    permission_classes = [permissions.AllowAny]
+    parser_classes = [MultiPartParser, FormParser]
+    lookup_field = "edit_token"
+    lookup_url_kwarg = "edit_token"

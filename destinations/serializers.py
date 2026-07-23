@@ -111,9 +111,9 @@ class DestinationRegisterSerializer(serializers.ModelSerializer):
             "address", "latitude", "longitude", "image", "website",
             "opening_hours", "amenities",
             "owner_name", "owner_email", "owner_phone",
-            "company_website_confirm",
+            "company_website_confirm", "edit_token",
         ]
-        read_only_fields = ["id", "slug"]
+        read_only_fields = ["id", "slug", "edit_token"]
         extra_kwargs = {
             "owner_name": {"write_only": True, "required": True},
             "owner_email": {"write_only": True, "required": True},
@@ -168,3 +168,72 @@ class DestinationRegisterSerializer(serializers.ModelSerializer):
                 destination.amenities.set(amenities)
 
         return destination
+
+
+class DestinationEditSerializer(serializers.ModelSerializer):
+    """
+    Lets an owner update their own listing using the private edit_token
+    from registration - no accounts, no login. Possession of the token
+    (a UUID, effectively unguessable) is the only authorization check.
+    Partial updates (PATCH) only touch fields actually sent; image and
+    amenities are left untouched if omitted.
+    """
+
+    category = serializers.SlugRelatedField(
+        slug_field="slug",
+        queryset=Category.objects.all(),
+        required=False,
+    )
+
+    amenities = serializers.ListField(
+        child=serializers.CharField(max_length=100),
+        required=False,
+        write_only=True,
+    )
+
+    image = serializers.ImageField(required=False)
+
+    class Meta:
+        model = Destination
+        fields = [
+            "id", "name", "slug", "description", "category",
+            "address", "latitude", "longitude", "image", "website",
+            "opening_hours", "amenities",
+            "owner_name", "owner_email", "owner_phone",
+        ]
+        read_only_fields = ["id", "slug"]
+        extra_kwargs = {
+            "owner_name": {"write_only": True},
+            "owner_email": {"write_only": True},
+            "owner_phone": {"write_only": True},
+        }
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        # amenities is write_only above (list of plain strings in, for
+        # symmetry with the register form) but the edit form still needs
+        # the CURRENT amenities to prefill itself, so surface them here.
+        data["amenities"] = [a.name for a in instance.amenities.all()]
+        return data
+
+    def update(self, instance, validated_data):
+        amenity_names = validated_data.pop("amenities", None)
+
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+
+        if amenity_names is not None:
+            amenities = []
+            for raw in amenity_names:
+                name = raw.strip()
+                if not name:
+                    continue
+                amenity, _ = Amenity.objects.get_or_create(
+                    name__iexact=name,
+                    defaults={"name": name},
+                )
+                amenities.append(amenity)
+            instance.amenities.set(amenities)
+
+        return instance

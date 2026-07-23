@@ -1,3 +1,5 @@
+import uuid
+
 from django.db import models
 
 from geo.models import Location
@@ -172,6 +174,17 @@ class Destination(models.Model):
     owner_phone = models.CharField(
         max_length=30,
         blank=True
+    )
+
+    edit_token = models.UUIDField(
+        default=uuid.uuid4,
+        editable=False,
+        unique=True,
+        help_text=(
+            "Private token that lets the owner edit this listing without "
+            "an account. Never shown publicly - only returned once, at "
+            "registration time."
+        )
     )
 
     created_at = models.DateTimeField(

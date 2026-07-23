@@ -7,6 +7,7 @@ from bookings.views import BookingLinkViewSet
 from destinations.views import (
     DestinationViewSet,
     DestinationRegisterView,
+    DestinationEditView,
     CategoryViewSet,
 )
 
@@ -19,11 +20,16 @@ router.register(r"categories", CategoryViewSet, basename="category")
 
 urlpatterns = [
     # Must come BEFORE router.urls: the router's detail route is
-    # destinations/<slug>/, and "register" would otherwise be swallowed
-    # by that pattern and treated as a slug lookup.
+    # destinations/<slug>/, and "register"/"edit" would otherwise be
+    # swallowed by that pattern and treated as a slug lookup.
     path(
         "destinations/register/",
         DestinationRegisterView.as_view(),
         name="destination-register",
+    ),
+    path(
+        "destinations/edit/<uuid:edit_token>/",
+        DestinationEditView.as_view(),
+        name="destination-edit",
     ),
 ] + router.urls
