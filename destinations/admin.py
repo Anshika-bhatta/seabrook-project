@@ -109,6 +109,7 @@ class DestinationAdmin(admin.ModelAdmin):
     readonly_fields = (
         "created_at",
         "updated_at",
+        "edit_token",
     )
 
     inlines = [
@@ -173,10 +174,16 @@ class DestinationAdmin(admin.ModelAdmin):
                     "owner_name",
                     "owner_email",
                     "owner_phone",
+                    "edit_token",
                 ),
                 "description": (
-                    "Filled in automatically when this listing comes "
-                    "through the public business registration form."
+                    "Owner fields fill in automatically when this listing "
+                    "comes through the public registration form. edit_token "
+                    "works for EVERY listing (including ones created before "
+                    "this field existed) - copy it into a URL like "
+                    "https://seabrooktexastown.com/?edit=&lt;token&gt; and "
+                    "send that link to the owner if they need to edit but "
+                    "never received their link."
                 ),
             },
         ),
